@@ -3,7 +3,12 @@ package com.example.roomwithflowdemonstration
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.ui.AppBarConfiguration
 import com.example.roomwithflowdemonstration.databinding.ActivityMainBinding
@@ -32,6 +37,7 @@ class MainActivity : AppCompatActivity() {
 
         setContent {
             MainScreen(
+                modifier = Modifier.padding(8.dp),
                 ::insertRegion,
                 ::getAllRegionsAsStream,
                 ::getAllRegionsAsStreamWithCancel,
@@ -42,23 +48,23 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun initDb() {
-        Timber.i("Into MainActivity.initDb")
+    private fun trace(str: String) {
+        Timber.d(str)
+    }
 
+    private fun initDb() {
         lifecycleScope.launch(Dispatchers.IO) {
-            Timber.d("Building database")
+            trace("Building database")
 
             db = DatabaseBuilder.build(this@MainActivity)
             regionDao = db.regionDao()
 
-            Timber.d("Deleting all regions.")
+            trace("Deleting all regions.")
             regionDao.deleteAll()
         }
     }
 
     private fun deleteAllRegions() {
-        Timber.i("Into MainActivity.deleteAllRegions")
-
         lifecycleScope.launch(Dispatchers.IO) {
             regionDao.deleteAll()
         }
@@ -66,50 +72,46 @@ class MainActivity : AppCompatActivity() {
 
     @OptIn(ExperimentalUuidApi::class)
     private fun insertRegion() {
-        Timber.i("Into MainActivity.insertRegion")
-
         lifecycleScope.launch(Dispatchers.IO) {
-            Timber.d("Inserting new region")
             val newRegion = RegionEntity(name = "Region ${Uuid.random()}")
+            trace("Inserting new region $newRegion")
             regionDao.insert(newRegion)
         }
     }
 
     private fun getAllRegionsAsStream() {
-        Timber.i("Into getAllRegionsAsStream")
         lifecycleScope.launch(Dispatchers.IO) {
             val allRegionsFlow = regionDao.getAllRegionsStream()
-
             allRegionsFlow.collect { regionList ->
-                Timber.d("a) From flow ${allRegionsFlow} new emission contains ${regionList.size} regions")
+                trace("a) From flow ${allRegionsFlow} new emission contains ${regionList.size} regions")
             }
         }
     }
 
     private fun getAllRegionsAsStreamWithCancel() {
-        Timber.i("Into getAllRegionsAsStreamWithCancel")
+        trace("List of regions:")
         val job: Job = lifecycleScope.launch(Dispatchers.IO) {
             val allRegionsFlow = regionDao.getAllRegionsStream()
             allRegionsFlow.collect { regionList ->
-                Timber.d("b) From flow ${allRegionsFlow} new emission contains ${regionList.size} regions.")
+                trace("b) From flow ${allRegionsFlow} new emission contains ${regionList.size} regions.")
                 coroutineContext.cancel()
             }
         }
     }
 
     private fun getAllRegionsAsList() {
-        Timber.i("Into getAllRegionsAsList")
+        trace("List of regions:")
         lifecycleScope.launch(Dispatchers.IO) {
             val allRegions = regionDao.getAllRegions()
-            Timber.d("Number of regions in returned List<Region> = ${allRegions.size}")
+            trace("Number of regions in returned List<Region> = ${allRegions.size}")
         }
     }
 
     private fun listAllRegions() {
-        Timber.i("Into listAllRegions")
+        trace("List of regions:")
         lifecycleScope.launch(Dispatchers.IO) {
             regionDao.getAllRegions().forEach {
-                Timber.d("id = ${it.id}, name = ${it.name}")
+                trace("id = ${it.id}, name = ${it.name}")
             }
         }
     }
